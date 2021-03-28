@@ -8,6 +8,7 @@ import (
 // proper error handling
 
 func main() {
+
 	fmt.Println("Hello")
 
 	name, err := os.Hostname()
