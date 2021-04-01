@@ -5,8 +5,6 @@ import (
 	"os"
 )
 
-// proper error handling
-
 func main() {
 
 	fmt.Println("Hello")
@@ -24,11 +22,13 @@ func main() {
 		fmt.Print("Do you want to host/join: ")
 		fmt.Scanf("%s", &activity)
 
-		if activity == "host" {
+		if activity == "h" {
 			host()
+			break
 
-		} else if activity == "join" {
+		} else if activity == "j" {
 			client()
+			break
 
 		} else {
 			fmt.Println("Invalid input")

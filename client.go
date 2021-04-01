@@ -14,18 +14,15 @@ func client() {
 	var ip_addr string
 
 	// check ip validity
-	fmt.Print("Enter IP:PORT of the host: ")
-	fmt.Scanf("%s", &ip_addr)
+	// fmt.Print("Enter IP:PORT of the host: ")
+	// fmt.Scanf("%s", &ip_addr)
+	ip_addr = "localhost:5000"
 
 	addr, err := net.ResolveTCPAddr("tcp", ip_addr)
-	if err != nil {
-		fmt.Println("1")
-	}
+	error_handler(err)
 
 	conn, err := net.DialTCP("tcp", nil, addr)
-	if err != nil {
-		fmt.Println("DISCONNECTED")
-	}
+	error_handler(err)
 
 	var user_name string
 	for {
@@ -34,20 +31,16 @@ func client() {
 		fmt.Scanf("%s", &user_name)
 
 		_, err = conn.Write([]byte(user_name + "\n"))
-		if err != nil {
-			fmt.Println("2")
-		}
+		error_handler(err)
 
 		response, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			fmt.Println("3")
-		}
+		error_handler(err)
 		response = strings.TrimSuffix(response, "\n")
 
 		if response == "set" {
 			break
 		} else {
-			fmt.Println("Name already exists")
+			fmt.Println("User name not available")
 		}
 	}
 
@@ -56,43 +49,37 @@ func client() {
 		for {
 			message, err := bufio.NewReader(conn).ReadString('\n')
 			if err != nil {
-				fmt.Println("4")
+				clear_chat_line(user_name)
+				fmt.Println("-->> DISCONNECTED <<--")
+				os.Exit(34)
 			}
 
-			fmt.Print("\033[2K")
-			fmt.Printf("\033[%dD", len(user_name)+6)
+			clear_chat_line(user_name)
 			fmt.Print(message)
-			fmt.Printf("%s -->> ", user_name)
+			print_chat_line(user_name)
 		}
 	}()
 
 	// send message
 	for {
 
-		fmt.Printf("%s -->> ", user_name)
+		print_chat_line(user_name)
 
 		text, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		if err != nil {
-			fmt.Println("5")
-		}
+		error_handler(err)
 		temp := strings.TrimSpace(string(text))
 
-		fmt.Print("\033[A")
-		fmt.Print("\033[K")
+		clear_chat_prev_line()
 
 		fmt.Print(user_name + " >> " + text)
 
 		if temp == ":stop" {
 			conn.Close()
-			// time.Sleep(2 * time.Second)
-			os.Exit(3)
+			return
 		}
 
 		_, err = conn.Write([]byte(string(text)))
-		if err != nil {
-			fmt.Println("6")
-		}
-
+		error_handler(err)
 	}
 
 }

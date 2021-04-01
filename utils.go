@@ -10,7 +10,7 @@ import (
 func error_handler(e error) {
 	if e != nil {
 		fmt.Println(e)
-		os.Exit(1)
+		os.Exit(30)
 	}
 }
 
@@ -23,4 +23,17 @@ func get_ip() string {
 	ip_address = strings.Split(ip_address, ":")[0]
 
 	return ip_address
+}
+
+func clear_chat_line(user_name string) {
+	fmt.Print("\033[2K")
+	fmt.Printf("\033[%dD", len(user_name)+6)
+}
+
+func print_chat_line(user_name string) {
+	fmt.Printf("%s -->> ", user_name)
+}
+
+func clear_chat_prev_line() {
+	fmt.Print("\033[A\033[K")
 }
