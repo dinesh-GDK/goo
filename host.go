@@ -9,9 +9,15 @@ import (
 )
 
 var users_list = &User{}
-var trash = &User{name: "trash"}
+var trash = &User{name: ":trash"}
 
-func broadCast(message string, exclude_user *User) {
+func host_broadcast(message string, exclude_user *User, self bool) {
+
+	if(self) {
+		clear_chat_prev_line()
+	} else {
+		clear_chat_line(users_list.name)
+	}
 
 	fmt.Print(message)
 
@@ -32,12 +38,16 @@ func broadCast(message string, exclude_user *User) {
 
 		dummy = dummy.next
 	}
+
+	if(!self) {
+		print_chat_line(users_list.name)
+	}
 }
 
-func handleConnection(conn *net.TCPConn) {
+func host_set_client_user_name(conn *net.TCPConn) string {
 
 	var name string
-	var err error
+	var err error // try to remove
 
 	// set user name
 	for {
@@ -47,7 +57,7 @@ func handleConnection(conn *net.TCPConn) {
 
 		name = strings.TrimSuffix(name, "\n")
 
-		exist := users_list.search_user_name(name)
+		exist := users_list.search(name)
 
 		if !exist {
 			_, err = conn.Write([]byte(string("set\n")))
@@ -60,16 +70,18 @@ func handleConnection(conn *net.TCPConn) {
 		}
 	}
 
+	return name
+}
+
+func host_handle_client(conn *net.TCPConn) {
+
 	user := &User{
-		name: name,
+		name: host_set_client_user_name(conn),
 		conn: conn,
 	}
 
 	users_list.insert(user)
-
-	clear_chat_line(users_list.name)
-	broadCast("-->> "+name+" joined <<--\n", trash)
-	print_chat_line(users_list.name)
+	host_broadcast("-->> "+user.name+" joined <<--\n", trash, false)
 
 	// read from client
 	for {
@@ -79,22 +91,45 @@ func handleConnection(conn *net.TCPConn) {
 			break
 		}
 
-		clear_chat_line(users_list.name)
-		broadCast(name+" >> "+client_msg, user)
-		print_chat_line(users_list.name)
+		host_broadcast(user.name+" >> "+client_msg, user, false)
 	}
 	
-	users_list.remove(user)
-
-	users_list.print()
-
-	clear_chat_line(users_list.name)
-	broadCast("-->> "+name+" left <<--\n", trash)
-	print_chat_line(users_list.name)
+	host_broadcast("-->> "+user.name+" left <<--\n", trash, false)
 	
 	conn.Close()
 	users_list.remove(user)
-	users_list.print()
+}
+
+func host_send_message(listen *net.TCPListener) {
+	
+	for {
+
+		print_chat_line(users_list.name)
+
+		text, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		error_handler(err)
+		temp := strings.TrimSpace(string(text))
+
+		if temp == ":stop" {
+			listen.Close()
+		}
+
+		host_broadcast(users_list.name+" >> "+text, trash, true)
+	}
+}
+
+func host_handle_multiple_clients(listen *net.TCPListener) {
+
+	for {
+		conn, err := listen.AcceptTCP()
+		if err != nil {
+			clear_chat_line(users_list.name)
+			fmt.Println("-->> DISCONNECTED <<--")
+			os.Exit(34)
+		}
+
+		go host_handle_client(conn)
+	}
 }
 
 func host() {
@@ -119,34 +154,7 @@ func host() {
 	// fmt.Print("Enter User name: ")
 	// fmt.Scanf("%s", &users_list.name)
 	users_list.name = "qwe"
-
-	// send message
-	go func() {
-		for {
-
-			print_chat_line(users_list.name)
-
-			text, err := bufio.NewReader(os.Stdin).ReadString('\n')
-			error_handler(err)
-			temp := strings.TrimSpace(string(text))
-
-			if temp == ":stop" {
-				listen.Close()
-			}
-
-			clear_chat_prev_line()
-			broadCast(users_list.name+" >> "+text, trash)
-		}
-	}()
-
-	for {
-		conn, err := listen.AcceptTCP()
-		if err != nil {
-			clear_chat_line(users_list.name)
-			fmt.Println("-->> DISCONNECTED <<--")
-			os.Exit(34)
-		}
-
-		go handleConnection(conn)
-	}
+	
+	go host_send_message(listen)
+	host_handle_multiple_clients(listen)
 }

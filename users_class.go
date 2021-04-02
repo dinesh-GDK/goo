@@ -15,7 +15,6 @@ func (head *User) remove(user *User) {
 	
 	dummy := head
 	for {
-
 		if(dummy.next == nil) {
 			break
 		}
@@ -24,6 +23,8 @@ func (head *User) remove(user *User) {
 			dummy.next = dummy.next.next
 			break
 		}
+
+		dummy = dummy.next
 	}
 }
 
@@ -41,7 +42,7 @@ func (head *User) insert(user *User) {
 	dummy.next = user
 }
 
-func (head *User) search_user_name(name string) bool {
+func (head *User) search(name string) bool {
 
 	dummy := head
 	for {
@@ -72,43 +73,4 @@ func (head *User) print() {
 		
 		dummy = dummy.next
 	}
-
 }
-
-// func main() {
-// 	head := &User{name: "head"}
-
-// 	// dummy := head
-
-// 	// dummy.name = "a"
-// 	// dummy.next = &User{}
-// 	// dummy = dummy.next
-
-// 	// dummy.name = "b"
-// 	// dummy.next = &User{}
-// 	// dummy = dummy.next
-
-// 	// dummy.name = "c"
-// 	// dummy.next = &User{}
-// 	// dummy = dummy.next
-
-// 	// head.print()
-// 	// fmt.Println()
-
-// 	// head.delete(head.next)
-// 	// head.print()
-
-// 	head.print()
-
-// 	head.insert(&User{name: "a"})
-// 	head.insert(&User{name: "b"})
-// 	head.insert(&User{name: "c"})
-// 	head.print()
-
-// 	head.delete(head.next)
-// 	head.print()
-
-	
-	
-
-// }
