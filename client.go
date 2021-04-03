@@ -8,72 +8,8 @@ import (
 	"strings"
 )
 
-func client_set_user_name(conn *net.TCPConn) string {
-	
-	var user_name string
-	for {
-
-		fmt.Print("Enter User name: ")
-		fmt.Scanf("%s", &user_name)
-
-		_, err := conn.Write([]byte(user_name + "\n"))
-		error_handler(err)
-
-		response, err := bufio.NewReader(conn).ReadString('\n')
-		error_handler(err)
-		response = strings.TrimSuffix(response, "\n")
-
-		if response == "set" {
-			break
-		} else {
-			fmt.Println("User name not available")
-		}
-	}
-
-	return user_name
-}
-
-func client_receive_message(conn *net.TCPConn, user_name string) {
-	for {
-		message, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			clear_chat_line(user_name)
-			fmt.Println("-->> DISCONNECTED <<--")
-			os.Exit(34)
-		}
-
-		clear_chat_line(user_name)
-		fmt.Print(message)
-		print_chat_line(user_name)
-	}
-}
-
-func client_send_message(conn *net.TCPConn, user_name string) {
-	for {
-
-		print_chat_line(user_name)
-
-		text, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		error_handler(err)
-		temp := strings.TrimSpace(string(text))
-
-		clear_chat_prev_line()
-
-		fmt.Print(user_name + " >> " + text)
-
-		if temp == ":stop" {
-			conn.Close()
-			return
-		}
-
-		_, err = conn.Write([]byte(string(text)))
-		error_handler(err)
-	}
-}
-
 func client() {
 
-	// var err error
 	var ip_addr string
 
 	// check ip validity
@@ -89,6 +25,78 @@ func client() {
 
 	user_name := client_set_user_name(conn)
 
+	if(user_name == ":full") {
+		return
+	}
+
 	go client_receive_message(conn, user_name)
 	client_send_message(conn, user_name)
+}
+
+func client_set_user_name(conn *net.TCPConn) string {
+	
+	var user_name string
+	for {
+		fmt.Print("Enter User name: ")
+		fmt.Scanf("%s", &user_name)
+
+		_, err := conn.Write([]byte(user_name + "\n"))
+		error_handler(err)
+
+		response, err := bufio.NewReader(conn).ReadString('\n')
+		error_handler(err)
+		response = strings.TrimSuffix(response, "\n")
+
+		if(response == ":full") {
+			fmt.Println("-->> Room Full <<--")
+			return response
+
+		} else if(response == ":set") {
+			break
+
+		} else {
+			fmt.Println("-->> User Name not available <<--")
+		}
+	}
+
+	return user_name
+}
+
+func client_receive_message(conn *net.TCPConn, user_name string) {
+
+	for {
+		message, err := bufio.NewReader(conn).ReadString('\n')
+		if(err != nil) {
+			clear_chat_line(user_name)
+			fmt.Println("-->> DISCONNECTED <<--")
+			return
+		}
+
+		clear_chat_line(user_name)
+		fmt.Print(message)
+		print_chat_line(user_name)
+	}
+}
+
+func client_send_message(conn *net.TCPConn, user_name string) {
+
+	for {
+		print_chat_line(user_name)
+
+		text, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		error_handler(err)
+		temp := strings.TrimSpace(string(text))
+
+		clear_chat_prev_line()
+
+		fmt.Print(user_name + " >> " + text)
+
+		if(temp == ":stop") {
+			conn.Close()
+			return
+		}
+
+		_, err = conn.Write([]byte(string(text)))
+		error_handler(err)
+	}
 }
