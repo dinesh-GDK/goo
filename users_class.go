@@ -17,21 +17,9 @@ type Users_list struct {
 	length int
 }
 
-func (list *Users_list) remove(user *User) {
-	
-	dummy := list.head
-	for {
-		if(dummy.next == nil) {
-			break
-		}
-
-		if(dummy.next == user) {
-			dummy.next = dummy.next.next
-			break
-		}
-
-		dummy = dummy.next
-	}
+func (list *Users_list) init(head_name string) {
+	list.head = &User{name: head_name}
+	list.tail = list.head
 }
 
 func (list *Users_list) insert(user *User) {
@@ -41,15 +29,50 @@ func (list *Users_list) insert(user *User) {
 	list.length++
 }
 
-func (list *Users_list) search(name string) bool {
-
+func (list *Users_list) remove(user *User) {
+	
 	dummy := list.head
 	for {
-		if(dummy == nil) {
+		if dummy.next == nil {
 			break
 		}
 
-		if(dummy.name == name) {
+		if dummy.next == user {
+			dummy.next = dummy.next.next
+			break
+		}
+
+		dummy = dummy.next
+	}
+}
+
+func (list *Users_list) search_by_user_name(name string) bool {
+
+	dummy := list.head
+	for {
+		if dummy == nil {
+			break
+		}
+
+		if dummy.name == name {
+			return true
+		}
+
+		dummy = dummy.next
+	}
+
+	return false
+}
+
+func (list *Users_list) search_by_conn(conn *net.TCPConn) bool {
+
+	dummy := list.head.next
+	for {
+		if dummy == nil {
+			break
+		}
+
+		if dummy.conn.RemoteAddr().(*net.TCPAddr).IP.String() == conn.RemoteAddr().(*net.TCPAddr).IP.String() {
 			return true
 		}
 
@@ -64,40 +87,12 @@ func (list *Users_list) print() {
 	dummy := list.head
 	for {
 
-		fmt.Println(dummy.name)
+		fmt.Println(dummy)
 
-		if(dummy.next == nil) {
+		if dummy.next == nil {
 			break
 		}
 		
 		dummy = dummy.next
 	}
 }
-
-// func main() {
-
-// 	l := &Users_list{}
-// 	l.head = &User{name: "asd"}
-
-// 	l.tail = l.head
-
-// 	a := &User{name: "a"}
-// 	b := &User{name: "b"}
-// 	c := &User{name: "c"}
-// 	d := &User{name: "d"}
-// 	e := &User{name: "e"}
-
-// 	l.insert(a)
-// 	l.insert(b)
-// 	l.insert(c)
-// 	l.insert(d)
-// 	l.insert(e)
-// 	fmt.Println(l.length)
-// 	l.print()
-
-// 	l.remove(c)
-// 	l.print()
-
-// 	fmt.Println(l.search("d"))
-// 	fmt.Println(l.search("z"))
-// }

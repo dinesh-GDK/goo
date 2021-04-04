@@ -6,13 +6,17 @@ import (
 	"net"
 	"os"
 	"strings"
+	"strconv"
 )
 
 // first user is the host
 var users_list = &Users_list{}
-var trash = &User{name: ":trash"}
+var ban_users_list = &Users_list{}
+var trash = &User{name: "trash"}
 
-var ROOM_CAPACITY = 10
+var ROOM_CAPACITY int = 10
+var CIPHER string = "aaa"
+var CIPHER_ATTEMPTS int = 2
 
 func host() {
 
@@ -35,11 +39,21 @@ func host() {
 
 	// fmt.Print("Enter User name: ")
 	// fmt.Scanf("%s", &users_list.name)
-	users_list.head = &User{name: "qwe"}
-	users_list.tail = users_list.head
+	users_list.init("qwe")
+	ban_users_list.init("atrash")
+
+	// host_set_cipher()
 	
 	go host_send_message(listen)
 	host_handle_multiple_clients(listen)
+}
+
+func host_set_cipher() {
+	fmt.Print("Set CIPHER: ")
+	fmt.Scanf("%s", &CIPHER)
+
+	fmt.Print("Set number of CIPHER attempts: ")
+	fmt.Scanf("%i", &CIPHER_ATTEMPTS)
 }
 
 func host_send_message(listen *net.TCPListener) {
@@ -51,7 +65,7 @@ func host_send_message(listen *net.TCPListener) {
 		error_handler(err)
 		temp := strings.TrimSpace(string(host_message))
 
-		if(temp == ":stop") {
+		if temp == ":stop" {
 			listen.Close()
 		}
 
@@ -63,20 +77,32 @@ func host_handle_multiple_clients(listen *net.TCPListener) {
 
 	for {
 		conn, err := listen.AcceptTCP()
-		if(err != nil) {
+		if err != nil {
 			clear_chat_line(users_list.head.name)
 			fmt.Println("-->> DISCONNECTED <<--")
 			return
 		}
 
-		go host_handle_client(conn)
+		if ban_users_list.search_by_conn(conn) {
+			_, err := conn.Write([]byte(":ban\n"))
+			error_handler(err)
+
+		} else {
+			_, err := conn.Write([]byte(":no_ban\n"))
+			error_handler(err)
+			go host_handle_client(conn)
+		}
 	}
 }
 
 func host_handle_client(conn *net.TCPConn) {
 
-	if(users_list.length >= ROOM_CAPACITY) {
+	if users_list.length >= ROOM_CAPACITY {
 		conn.Write([]byte(string(":full\n")))
+		return
+	}
+
+	if !host_cipher_verification(conn) {
 		return
 	}
 
@@ -92,7 +118,7 @@ func host_handle_client(conn *net.TCPConn) {
 	for {
 		client_message, err := bufio.NewReader(conn).ReadString('\n')
 		// when connection with client is broken
-		if(err != nil) {
+		if err != nil {
 			break
 		}
 
@@ -103,6 +129,35 @@ func host_handle_client(conn *net.TCPConn) {
 	
 	conn.Close()
 	users_list.remove(user)
+}
+
+func host_cipher_verification(conn *net.TCPConn) bool {
+	
+	for i := 0; i < CIPHER_ATTEMPTS; i++ {
+
+		cipher, err := bufio.NewReader(conn).ReadString('\n')
+		error_handler(err)
+
+		cipher = strings.TrimSuffix(cipher, "\n")
+
+		if cipher == CIPHER {
+			_, err := conn.Write([]byte(string(":match\n")))
+			error_handler(err)	
+			return true
+
+		} else if i == CIPHER_ATTEMPTS-1 {
+			_, err := conn.Write([]byte(string(":limit_exceeded\n")))
+			error_handler(err)
+			break
+
+		} else {
+			_, err := conn.Write([]byte(string(":no_match#"+ strconv.Itoa(CIPHER_ATTEMPTS-i-1) +"\n")))
+			error_handler(err)
+		}
+	}
+	
+	ban_users_list.insert(&User{conn: conn})
+	return false
 }
 
 func host_set_client_user_name(conn *net.TCPConn) string {
@@ -118,9 +173,9 @@ func host_set_client_user_name(conn *net.TCPConn) string {
 
 		name = strings.TrimSuffix(name, "\n")
 
-		exist := users_list.search(name)
+		exist := users_list.search_by_user_name(name)
 
-		if(!exist) {
+		if !exist {
 			_, err = conn.Write([]byte(string(":set\n")))
 			error_handler(err)			
 			break
@@ -136,7 +191,7 @@ func host_set_client_user_name(conn *net.TCPConn) string {
 
 func host_broadcast(message string, exclude_user *User, self bool) {
 
-	if(self) {
+	if self {
 		clear_chat_prev_line()
 	} else {
 		clear_chat_line(users_list.head.name)
@@ -147,11 +202,11 @@ func host_broadcast(message string, exclude_user *User, self bool) {
 	dummy := users_list.head.next
 	for {
 
-		if(dummy == nil) {
+		if dummy == nil {
 			break
 		}
 
-		if(dummy == exclude_user) {
+		if dummy == exclude_user {
 			dummy = dummy.next
 			continue
 		}
@@ -162,7 +217,7 @@ func host_broadcast(message string, exclude_user *User, self bool) {
 		dummy = dummy.next
 	}
 
-	if(!self) {
+	if !self {
 		print_chat_line(users_list.head.name)
 	}
 }
