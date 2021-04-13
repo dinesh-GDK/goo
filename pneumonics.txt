@@ -1,0 +1,8 @@
+:b - ban
+:nb - no ban
+:f - room full
+:m - match (cipher matching)
+:le - limit limit_exceeded
+:nm - no match
+:s - set (username set)
+:ns - no set

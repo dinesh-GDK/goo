@@ -22,16 +22,15 @@ func client() {
 
 	conn, err := net.DialTCP("tcp", nil, addr)
 	error_handler(err)
-	
+
 	ban_status, err := bufio.NewReader(conn).ReadString('\n')
 	error_handler(err)
 	ban_status = strings.TrimSuffix(ban_status, "\n")
 
-	if ban_status == ":ban" {
+	if ban_status == ":b" {
 		fmt.Println("-->> YOU HAVE BEEN BANNED FROM ### <<--")
 		return
 	}
-	
 
 	if !client_cipher_verification(conn) {
 		return
@@ -39,7 +38,7 @@ func client() {
 
 	user_name := client_set_user_name(conn)
 
-	if user_name == ":full" {
+	if user_name == ":f" {
 		return
 	}
 
@@ -55,23 +54,23 @@ func client_cipher_verification(conn *net.TCPConn) bool {
 		// fmt.Scanf("%s", &cipher)
 		cipher = "aaa"
 
-		_, err := conn.Write([]byte(cipher+"\n"))
+		_, err := conn.Write([]byte(cipher + "\n"))
 		error_handler(err)
 
 		response, err := bufio.NewReader(conn).ReadString('\n')
 		error_handler(err)
 		response = strings.TrimSuffix(response, "\n")
 
-		if response == ":match" {
+		if response == ":m" {
 			fmt.Println("-->> CIPHER MATCHED <<--")
 			return true
 
-		} else if response == ":limit_exceeded" {
+		} else if response == ":le" {
 			fmt.Println("-->> MAXIMUM LIMIT EXCEEDED FOR CIPHER VERIFICATION <<--")
 			break
-		
+
 		} else {
-			fmt.Println("-->> "+strings.Split(response, "#")[1]+" ATTEMPT(S) LEFT FOR CIPHER VERIFICATION <<--")
+			fmt.Println("-->> " + strings.Split(response, "#")[1] + " ATTEMPT(S) LEFT FOR CIPHER VERIFICATION <<--")
 		}
 	}
 
@@ -79,24 +78,24 @@ func client_cipher_verification(conn *net.TCPConn) bool {
 }
 
 func client_set_user_name(conn *net.TCPConn) string {
-	
+
 	var user_name string
 	for {
 		fmt.Print("Enter User name: ")
 		fmt.Scanf("%s", &user_name)
 
-		_, err := conn.Write([]byte(user_name+"\n"))
+		_, err := conn.Write([]byte(user_name + "\n"))
 		error_handler(err)
 
 		response, err := bufio.NewReader(conn).ReadString('\n')
 		error_handler(err)
 		response = strings.TrimSuffix(response, "\n")
 
-		if response == ":full" {
+		if response == ":f" {
 			fmt.Println("-->> Room Full <<--")
 			return response
 
-		} else if response == ":set" {
+		} else if response == ":s" {
 			break
 
 		} else {
@@ -140,6 +139,11 @@ func client_send_message(conn *net.TCPConn, user_name string) {
 		if temp == ":stop" {
 			conn.Close()
 			return
+		}
+
+		if temp[0] == ':' {
+			command_palette(temp)
+			continue
 		}
 
 		_, err = conn.Write([]byte(string(text)))

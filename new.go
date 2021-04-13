@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -21,12 +22,13 @@ func main() {
 		var activity string
 		fmt.Print("Do you want to host/join: ")
 		fmt.Scanf("%s", &activity)
+		activity = strings.ToLower(activity)
 
-		if activity == "h" {
+		if activity == "h" || activity == "host" {
 			host()
 			break
 
-		} else if activity == "j" {
+		} else if activity == "j" || activity == "join" {
 			client()
 			break
 
