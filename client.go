@@ -12,10 +12,14 @@ func client() {
 
 	var ip_addr string
 
-	// check ip validity
-	// fmt.Print("Enter IP:PORT of the host: ")
-	// fmt.Scanf("%s", &ip_addr)
-	ip_addr = "localhost:5000"
+	if !DEBUG {
+		// check ip validity
+		fmt.Print("Enter IP:PORT of the host: ")
+		fmt.Scanf("%s", &ip_addr)
+
+	} else {
+		ip_addr = "localhost:5000"
+	}
 
 	addr, err := net.ResolveTCPAddr("tcp", ip_addr)
 	error_handler(err)
@@ -42,17 +46,26 @@ func client() {
 		return
 	}
 
-	go client_receive_message(conn, user_name)
-	client_send_message(conn, user_name)
+	end := make(chan bool)
+
+	go client_receive_message(conn, user_name, end)
+	go client_send_message(conn, user_name)
+
+	<-end
 }
 
 func client_cipher_verification(conn *net.TCPConn) bool {
 
 	var cipher string
 	for {
-		// fmt.Print("Enter cipher: ")
-		// fmt.Scanf("%s", &cipher)
-		cipher = "aaa"
+
+		if !DEBUG {
+			fmt.Print("Enter cipher: ")
+			fmt.Scanf("%s", &cipher)
+
+		} else {
+			cipher = "aaa"
+		}
 
 		_, err := conn.Write([]byte(cipher + "\n"))
 		error_handler(err)
@@ -106,14 +119,14 @@ func client_set_user_name(conn *net.TCPConn) string {
 	return user_name
 }
 
-func client_receive_message(conn *net.TCPConn, user_name string) {
+func client_receive_message(conn *net.TCPConn, user_name string, end chan bool) {
 
 	for {
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
 			clear_chat_line(user_name)
 			fmt.Println("-->> DISCONNECTED <<--")
-			os.Exit(99) // change
+			end <- true
 			return
 		}
 
@@ -134,7 +147,7 @@ func client_send_message(conn *net.TCPConn, user_name string) {
 
 		clear_chat_prev_line()
 
-		fmt.Print(user_name + " >> " + text)
+		fmt.Print("*" + user_name + " >> " + text)
 
 		if temp == ":stop" {
 			conn.Close()

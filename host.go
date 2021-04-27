@@ -15,17 +15,21 @@ var ban_users_list = &Users_list{}
 var trash = &User{name: "trash"}
 
 var ROOM_CAPACITY int = 10
-var CIPHER string = "aaa"
-var CIPHER_ATTEMPTS int = 2
+var CIPHER string
+var CIPHER_ATTEMPTS int
 
 func host() {
 
 	var PORT string
 
-	// check for port validity
-	// fmt.Print("Enter the PORT to host: ")
-	// fmt.Scanf("%s", &PORT)
-	PORT = "5000"
+	if !DEBUG {
+		// check for port validity
+		fmt.Print("Enter the PORT to host: ")
+		fmt.Scanf("%s", &PORT)
+
+	} else {
+		PORT = "5000"
+	}
 
 	addr, err := net.ResolveTCPAddr("tcp4", ":"+PORT)
 	error_handler(err)
@@ -37,26 +41,35 @@ func host() {
 
 	fmt.Println("Hosting at: " + get_ip() + ":" + PORT)
 
-	// fmt.Print("Enter User name: ")
-	// fmt.Scanf("%s", &users_list.name)
-	users_list.init("qwe")
+	var host_user_name string
+	if !DEBUG {
+		fmt.Print("Enter User name: ")
+		fmt.Scanf("%s", &host_user_name)
+
+		fmt.Print("Set CIPHER: ")
+		fmt.Scanf("%s", &CIPHER)
+
+		fmt.Print("Set number of CIPHER attempts: ")
+		fmt.Scanf("%d", &CIPHER_ATTEMPTS)
+
+	} else {
+		host_user_name = "qwe"
+		CIPHER = "aaa"
+		CIPHER_ATTEMPTS = 2
+	}
+
+	users_list.init(host_user_name)
 	ban_users_list.init("atrash")
 
-	// host_set_cipher()
+	end := make(chan bool)
 
-	go host_send_message(listen)
-	host_handle_multiple_clients(listen)
+	go host_send_message(listen, end)
+	go host_handle_multiple_clients(listen)
+
+	<-end
 }
 
-func host_set_cipher() {
-	fmt.Print("Set CIPHER: ")
-	fmt.Scanf("%s", &CIPHER)
-
-	fmt.Print("Set number of CIPHER attempts: ")
-	fmt.Scanf("%i", &CIPHER_ATTEMPTS)
-}
-
-func host_send_message(listen *net.TCPListener) {
+func host_send_message(listen *net.TCPListener, end chan bool) {
 
 	for {
 		print_chat_line(users_list.head.name)
@@ -67,6 +80,9 @@ func host_send_message(listen *net.TCPListener) {
 
 		if temp == ":stop" {
 			listen.Close()
+			fmt.Print("--> STOPPED HOSTING <--\n")
+			end <- true
+			return
 		}
 
 		if temp[0] == ':' {
@@ -138,7 +154,7 @@ func host_handle_client(conn *net.TCPConn) {
 
 func host_cipher_verification(conn *net.TCPConn) bool {
 
-	for i := 0; i < CIPHER_ATTEMPTS; i++ {
+	for i := 1; i <= CIPHER_ATTEMPTS; i++ {
 
 		cipher, err := bufio.NewReader(conn).ReadString('\n')
 		error_handler(err)
@@ -150,13 +166,13 @@ func host_cipher_verification(conn *net.TCPConn) bool {
 			error_handler(err)
 			return true
 
-		} else if i == CIPHER_ATTEMPTS-1 {
-			_, err := conn.Write([]byte(string(":lie\n")))
+		} else if i == CIPHER_ATTEMPTS {
+			_, err := conn.Write([]byte(string(":le\n")))
 			error_handler(err)
 			break
 
 		} else {
-			_, err := conn.Write([]byte(string(":nm#" + strconv.Itoa(CIPHER_ATTEMPTS-i-1) + "\n")))
+			_, err := conn.Write([]byte(string(":nm#" + strconv.Itoa(CIPHER_ATTEMPTS-i) + "\n")))
 			error_handler(err)
 		}
 	}
@@ -198,6 +214,7 @@ func host_broadcast(message string, exclude_user *User, self bool) {
 
 	if self {
 		clear_chat_prev_line()
+		fmt.Print("*")
 	} else {
 		clear_chat_line(users_list.head.name)
 	}

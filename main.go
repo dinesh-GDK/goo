@@ -6,7 +6,13 @@ import (
 	"strings"
 )
 
+var DEBUG bool = false
+
 func main() {
+
+	if len(os.Args) > 1 && os.Args[1] == "debug" {
+		DEBUG = true
+	}
 
 	fmt.Println("Hello")
 
