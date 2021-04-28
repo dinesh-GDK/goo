@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -14,15 +15,18 @@ func error_handler(e error) {
 	}
 }
 
-func get_ip() string {
+func get_ip() (string, error) {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
-	error_handler(err)
+	if err != nil {
+		fmt.Println("--> NOT CONNECTED TO INTERNET <--")
+		return "", errors.New(":nc")
+	}
 
 	defer conn.Close()
 	ip_address := conn.LocalAddr().(*net.UDPAddr).String()
 	ip_address = strings.Split(ip_address, ":")[0]
 
-	return ip_address
+	return ip_address, nil
 }
 
 func clear_chat_line(user_name string) {

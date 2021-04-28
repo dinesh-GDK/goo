@@ -19,9 +19,12 @@ func main() {
 	name, err := os.Hostname()
 	error_handler(err)
 
-	fmt.Println("Welcome", name)
+	ip_addr, err := get_ip()
+	if err != nil {
+		return
+	}
 
-	ip_addr := get_ip()
+	fmt.Println("Welcome", name)
 	fmt.Println("Your IP address:", ip_addr)
 
 	for {
@@ -42,5 +45,4 @@ func main() {
 			fmt.Println("Invalid input")
 		}
 	}
-
 }

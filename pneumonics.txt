@@ -1,3 +1,5 @@
+Internal
+
 :b - ban
 :nb - no ban
 :f - room full
@@ -6,3 +8,11 @@
 :nm - no match
 :s - set (username set)
 :ns - no set
+:nc - no connection (no internet)
+
+User
+
+:ub - list ip of all the users banned (host only)
+:ub_# - removes the # user from ban list (host_only)
+:clear - clear screen
+:myip - prints p address

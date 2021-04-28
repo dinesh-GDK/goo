@@ -39,7 +39,11 @@ func host() {
 
 	defer listen.Close()
 
-	fmt.Println("Hosting at: " + get_ip() + ":" + PORT)
+	ip_addr, err := get_ip()
+	if err != nil {
+		return
+	}
+	fmt.Println("Hosting at: " + ip_addr + ":" + PORT)
 
 	var host_user_name string
 	if !DEBUG {
@@ -55,7 +59,7 @@ func host() {
 	} else {
 		host_user_name = "qwe"
 		CIPHER = "aaa"
-		CIPHER_ATTEMPTS = 2
+		CIPHER_ATTEMPTS = 1
 	}
 
 	users_list.init(host_user_name)
@@ -83,6 +87,43 @@ func host_send_message(listen *net.TCPListener, end chan bool) {
 			fmt.Print("--> STOPPED HOSTING <--\n")
 			end <- true
 			return
+		}
+
+		if temp[:3] == ":ub" {
+
+			unban_num := -1
+			if len(temp) > 4 {
+				unban_num, err = strconv.Atoi(temp[4:])
+
+				if err != nil || unban_num > ban_users_list.length {
+					fmt.Println("--> WRONG BAN NUMBER <--")
+					continue
+				}
+			}
+
+			dummy := ban_users_list.head.next
+			if dummy == nil {
+				fmt.Println("--> No User(s) banned <--")
+			}
+
+			i := 1
+			for {
+				if dummy == nil {
+					break
+				}
+
+				if unban_num < 0 {
+					fmt.Println(strconv.Itoa(i) + ") " + dummy.conn.RemoteAddr().(*net.TCPAddr).IP.String())
+				}
+
+				if unban_num == i {
+					ban_users_list.remove(dummy)
+				}
+
+				dummy = dummy.next
+			}
+
+			continue
 		}
 
 		if temp[0] == ':' {
@@ -215,6 +256,7 @@ func host_broadcast(message string, exclude_user *User, self bool) {
 	if self {
 		clear_chat_prev_line()
 		fmt.Print("*")
+
 	} else {
 		clear_chat_line(users_list.head.name)
 	}
